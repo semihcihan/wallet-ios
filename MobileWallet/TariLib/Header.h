@@ -1,5 +1,5 @@
-//  HomeViewController.swift
-
+//  Header.h
+	
 /*
 	Package MobileWallet
 	Created by Jason van den Berg on 2019/10/29
@@ -38,26 +38,4 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-import UIKit
-
-class HomeViewController: UIViewController {
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
-        
-        byte_vector_create(["a", "b"])
-    }
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
-}
+#include "wallet.h"

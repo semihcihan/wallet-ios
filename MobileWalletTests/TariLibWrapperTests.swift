@@ -108,6 +108,10 @@ class TariLibWrapperTests: XCTestCase {
         //MARK: Create new wallet
         let wallet = Wallet(commsConfig: commsConfig, loggingFilePath: loggingFilePath)
         XCTAssertEqual(wallet.publicKey.hex, "30e1dfa197794858bfdbf96cdce5dc8637d4bd1202dc694991040ddecbf42d40")
+        
+        //MARK: Callback registrations
+        wallet.addCallback()
+        sleep(2)
                 
         //MARK: Add bob as a contact
         let bobPublicKeyHex = "6a493210f7499cd17fecb510ae0cea23a110e8d5b901f8acadd3095c73a3b919"
@@ -171,7 +175,7 @@ class TariLibWrapperTests: XCTestCase {
         do {
             let broadcastedCompletedTx = try wallet.completedTransactions.at(position: 0)
             try wallet.testTransactionMined(completedTransaction: broadcastedCompletedTx)
-            
+                        
             let minedCompletedTx = try wallet.completedTransactions.at(position: 0)
             XCTAssertEqual(minedCompletedTx.status, .mined)
         } catch {
@@ -231,5 +235,7 @@ class TariLibWrapperTests: XCTestCase {
         XCTAssertGreaterThan(wallet.availableBalance, 0)
         XCTAssertEqual(wallet.pendingIncomingBalance, 0)
         XCTAssertEqual(wallet.pendingOutgoingBalance, 0)
+        
+        sleep(5)
     }
 }

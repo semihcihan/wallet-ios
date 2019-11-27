@@ -1,8 +1,8 @@
-//  CommsConfig.swift
+//  WalletCallbacks.swift
 
 /*
 	Package MobileWallet
-	Created by Jason van den Berg on 2019/11/15
+	Created by Jason van den Berg on 2019/11/26
 	Using Swift 5.0
 	Running on macOS 10.15
 
@@ -40,23 +40,42 @@
 
 import Foundation
 
-class CommsConfig {
-    private var ptr: OpaquePointer
+public func globaCallback(completedTransactionPointer: OpaquePointer?) {
+    print(">>>>>>>>>>>>>>>>>GLOBAL<<<<<<<<<<<<<<<<<<<<")
+    print(completedTransactionPointer as Any)
+    fatalError("This crash is a good thing...")
+}
 
-    var pointer: OpaquePointer {
-        return ptr
+extension Wallet {
+    func registerTransactionBroadcastCallback(callback: (_ completedTransaction: CompletedTransaction) -> Void) throws {
+        
+        //MARK: -- Registering the callback using a closure
+//        let didRegisterCallback = wallet_callback_register_mined(self.pointer, { (completedTransactionPointer: OpaquePointer?) -> Void in
+//            print(">>>>>>>>>>>>>>>>>CLOSURE<<<<<<<<<<<<<<<<<<<<")
+//            print(completedTransactionPointer as Any)
+//            fatalError("This crash is a good thing...")
+//        })
+
+        //MARK: -- Registering the callback using a reference to a global function
+        let funcPointer: (@convention(c) (OpaquePointer?) -> Void)! = globaCallback
+        let didRegisterCallback = wallet_callback_register_mined(self.pointer, funcPointer)
+
+        print("Registered>>>")
+        print(didRegisterCallback)
+
+        if !didRegisterCallback {
+            throw WalletErrors.failedToRegisterCallback
+        }
     }
 
-    init(privateKey: PrivateKey, databasePath: String, databaseName: String, controlAddress: String, listenerAddress: String) {
-        let controlPointer = UnsafeMutablePointer<Int8>(mutating: (controlAddress as NSString).utf8String)
-        let listenerPointer = UnsafeMutablePointer<Int8>(mutating: (listenerAddress as NSString).utf8String)
-        let dbPointer = UnsafeMutablePointer<Int8>(mutating: (databaseName as NSString).utf8String)
-        let pathPointer = UnsafeMutablePointer<Int8>(mutating: (databasePath as NSString).utf8String)
+    func addCallback() {
+        do {
+            try self.registerTransactionBroadcastCallback(callback: { (completedTransaction) in
+                print(completedTransaction.status)
+            })
+        } catch {
+            fatalError(error.localizedDescription)
+        }
 
-        ptr = comms_config_create(controlPointer, listenerPointer, dbPointer, pathPointer, privateKey.pointer)
-    }
-
-    deinit {
-        comms_config_destroy(ptr)
     }
 }

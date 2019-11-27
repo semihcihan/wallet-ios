@@ -50,6 +50,7 @@ enum WalletErrors: Error {
     case testTransactionBroadcast
     case testTransactionMined
     case testSendCompleteTransaction
+    case failedToRegisterCallback
 }
 
 class Wallet {

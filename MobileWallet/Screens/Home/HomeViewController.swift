@@ -100,6 +100,7 @@ class HomeViewController: UIViewController, FloatingPanelControllerDelegate, Tra
     override func viewDidLoad() {
         overrideUserInterfaceStyle = .light
 
+        
         setup()
         super.viewDidLoad()
 

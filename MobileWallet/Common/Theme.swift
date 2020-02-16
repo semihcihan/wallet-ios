@@ -70,6 +70,8 @@ struct Colors: Loopable {
     let actionButtonBackgroundSimple = UIColor(named: "ActionButtonBackgroundSimple")
     let actionButtonBackgroundGradient1 = UIColor(named: "ActionButtonBackgroundGradient1")
     let actionButtonBackgroundGradient2 = UIColor(named: "ActionButtonBackgroundGradient2")
+    let actionButtonDisabled = UIColor(named: "ActionButtonDisabled")
+    let actionButtonDisabledTitle = UIColor(named: "ActionButtonDisabledTitle")
 
     let transactionTableBackground = UIColor(named: "TransactionTableBackground")
     let splashBackground = UIColor(named: "SplashBackground")
@@ -137,6 +139,11 @@ struct Colors: Loopable {
     //Simple text button
     let textButton = UIColor(named: "TextButton")
     let textButtonSecondary = UIColor(named: "TextButtonSecondary")
+
+    //Amount screen
+    let keypadButton = UIColor(named: "KeypadButton")
+    let amountWarning = UIColor(named: "AmountWarning")
+    let amountWarningLabel = UIColor(named: "AmountWarningLabel")
 }
 
 struct Fonts: Loopable {
@@ -193,6 +200,12 @@ struct Fonts: Loopable {
     //Intro to wallet
     let introTitleBold = UIFont(name: "AvenirLTStd-Black", size: 18)
     let introTitle = UIFont(name: "AvenirLTStd-Light", size: 18)
+
+    //Amount screen
+    let keypadButton = UIFont(name: "AvenirLTStd-Heavy", size: 22.0)
+    let amountLabel = UIFont(name: "AvenirLTStd-Black", size: 80.0)
+    let warningBalanceLabel = UIFont(name: "AvenirLTStd-Heavy", size: 14.0)
+    let amountWarningLabel = UIFont(name: "AvenirLTStd-Roman", size: 13.0)
 }
 
 struct Images: Loopable {
@@ -221,6 +234,9 @@ struct Images: Loopable {
     let homeBackgroundImage = UIImage(named: "HomePattern")
 
     let handWave = UIImage(named: "HandWave")
+
+    //Amount
+    let gemAmount = UIImage(named: "GemAmount")
 }
 
 struct Theme {

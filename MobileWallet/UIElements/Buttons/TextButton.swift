@@ -51,6 +51,11 @@ class TextButton: UIButton {
         commonSetup()
     }
 
+    convenience init() {
+        self.init(frame: CGRect.zero)
+        commonSetup()
+    }
+
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         commonSetup()

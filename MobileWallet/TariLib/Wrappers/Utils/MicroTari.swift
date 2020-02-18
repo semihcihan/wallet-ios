@@ -116,16 +116,18 @@ struct MicroTari {
         MicroTari.editFormatter.negativePrefix = "-"
     }
 
-    public mutating func setRawValue(_ value: UInt64) {
-        rawValue = value * UInt64(MicroTari.CONVERSION)
+    public static func getTariConvertedNumber(_ number: NSNumber) -> UInt64 {
+        return number.uint64Value * UInt64(CONVERSION)
     }
+}
 
+extension MicroTari {
     public static func convertToNumber(_ number: String) -> NSNumber? {
         return defaultFormatter.number(from: number)
     }
 
-    public static func convertToString(_ number: NSNumber, decimal: Int) -> String? {
-        editFormatter.minimumFractionDigits = decimal
+    public static func convertToString(_ number: NSNumber, fractionDigits: Int) -> String? {
+        editFormatter.minimumFractionDigits = fractionDigits
         return editFormatter.string(from: number)
     }
 }

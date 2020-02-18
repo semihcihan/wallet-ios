@@ -56,6 +56,14 @@ class TextButton: UIButton {
         commonSetup()
     }
 
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        if let image = image(for: .normal) {
+            setRightImage(image)
+        }
+    }
+
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         commonSetup()
@@ -109,8 +117,8 @@ class TextButton: UIButton {
             setImage(image, for: .normal)
         }
 
-        semanticContentAttribute = .forceRightToLeft //Getting the image to show the other side of the button
-        titleEdgeInsets = UIEdgeInsets(top: 0, left: -2, bottom: 0, right: 2)
-        sizeToFit()
+        transform = CGAffineTransform(scaleX: -1.0, y: 1.0)
+        titleLabel?.transform = CGAffineTransform(scaleX: -1.0, y: 1.0)
+        imageView?.transform = CGAffineTransform(scaleX: -1.0, y: 1.0)
     }
 }

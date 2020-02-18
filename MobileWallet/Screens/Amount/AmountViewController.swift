@@ -42,19 +42,17 @@ import UIKit
 
 class AmountViewController: UIViewController {
 
-    var buttons = [UIButton]()
-    let actionButton = SendButton(frame: .zero)
-    let amountLabel = AnimatedBalanceLabel()
-    let keypadContainerStackView = UIStackView()
-    static let groupingSeparator: Character = "."
-    let warningView = UIView()
-    let warningLabel = UILabel()
-    let warningBalanceLabel = UILabel()
-    let valueImageView = UIImageView(image: Theme.shared.images.gemAmount)
-    let transactionViewContainer = UIView()
-    let animationDuration = 0.3
-    var balanceCheckTimer: Timer?
-    let transactionFeeLabel = UILabel()
+    private var buttons = [UIButton]()
+    private let continueButton = SendButton(frame: .zero)
+    private let amountLabel = AnimatedBalanceLabel()
+    private let keypadContainerStackView = UIStackView()
+    private let warningView = UIView()
+    private let warningLabel = UILabel()
+    private let warningBalanceLabel = UILabel()
+    private let transactionViewContainer = UIView()
+    private let animationDuration = 0.3
+    private var balanceCheckTimer: Timer?
+    private let transactionFeeLabel = UILabel()
 
     var rawInput = ""
 
@@ -64,6 +62,7 @@ class AmountViewController: UIViewController {
         view.backgroundColor = Theme.shared.colors.appBackground
         overrideUserInterfaceStyle = .light
         setup()
+        updateLabelText()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -72,17 +71,18 @@ class AmountViewController: UIViewController {
         navigationController?.setNavigationBarHidden(false, animated: true)
     }
 
-    deinit {
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+
         balanceCheckTimer?.invalidate()
         balanceCheckTimer = nil
     }
 
-    @objc private func checkAvailableBalance() {
-        defer {
-            balanceCheckTimer?.invalidate()
-            balanceCheckTimer = nil
-        }
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+    }
 
+    @objc private func checkAvailableBalance() {
         guard let transactionAmount = MicroTari.convertToNumber(rawInput) else {
             return
         }
@@ -101,11 +101,18 @@ class AmountViewController: UIViewController {
             return
         }
 
-        //TODO: add transaction amount
-        if availableBalance < transactionAmount.int64Value {
-            showBalanceExceeded(balance: String(availableBalance))
+        guard !transactionAmount.isEqual(to: NSNumber(0)) else {
+            return
         }
-        showTransactionAmount("15.75")
+
+        if availableBalance < MicroTari.getTariConvertedNumber(transactionAmount) {
+            let balanceTari = MicroTari(availableBalance)
+            showBalanceExceeded(balance: balanceTari.formatted)
+        } else {
+            continueButton.isEnabled = true
+        }
+
+        showTransactionFee("15.75")
     }
 
     @objc private func keypadButtonTapped(_ sender: UIButton) {
@@ -116,7 +123,7 @@ class AmountViewController: UIViewController {
                 } else if sender.tag == 11 {
                     return "0"
                 } else {
-                    return String(AmountViewController.groupingSeparator)
+                    return String(MicroTari.decimalSeparator)
                 }
             }()
 
@@ -126,7 +133,7 @@ class AmountViewController: UIViewController {
         }
     }
 
-    func deleteCharacter() {
+    private func deleteCharacter() {
         guard !rawInput.isEmpty else {
             return
         }
@@ -137,33 +144,48 @@ class AmountViewController: UIViewController {
         }
 
         rawInput = updatedInput
+        print(rawInput)
         updateLabelText()
     }
 
-    func addCharacater(_ value: String) {
-        let updatedText = rawInput + value
+    private func addCharacater(_ value: String) {
+        var updatedText = rawInput + value
+
+        if rawInput.isEmpty && value == MicroTari.decimalSeparator {
+            updatedText = "0" + updatedText
+        } else if rawInput == "0" && value != MicroTari.decimalSeparator {
+            updatedText = value
+        }
 
         guard isValidNumber(string: updatedText, finalNumber: false) else {
             return
         }
 
         rawInput = updatedText
+        print(rawInput)
         updateLabelText()
     }
 
-    func updateLabelText() {
-        let amountAttributedText = NSAttributedString(
-            string: convertRawToFormattedString() ?? "",
+    private func updateLabelText() {
+        let amountAttributedText = NSMutableAttributedString(
+            string: convertRawToFormattedString() ?? "0",
             attributes: [
                 NSAttributedString.Key.font: Theme.shared.fonts.amountLabel!,
                 NSAttributedString.Key.foregroundColor: UIColor.black
             ]
         )
 
+        let gemAttachment = NSTextAttachment()
+        gemAttachment.image = Theme.shared.images.gemAmount
+        let imageString = NSAttributedString(attachment: gemAttachment)
+        amountAttributedText.insert(imageString, at: 0)
+
         amountLabel.attributedText = amountAttributedText
 
         hideBalanceExceeded()
-        hideTransactionAmount()
+        hideTransactionFee()
+        continueButton.isEnabled = false
+
         if balanceCheckTimer != nil {
             balanceCheckTimer?.invalidate()
         }
@@ -172,16 +194,16 @@ class AmountViewController: UIViewController {
         }
     }
 
-    func isValidNumber(string: String, finalNumber: Bool) -> Bool {
+    private func isValidNumber(string: String, finalNumber: Bool) -> Bool {
         if !finalNumber && string.isEmpty {
             return true
         }
 
-        guard string.first != "0" else {
+        guard string == "0" || (string.first == "0" && String(string[string.index(string.startIndex, offsetBy: 1)]) == MicroTari.decimalSeparator) || string.first != "0" else {
             return false
         }
 
-        guard string.filter({$0 == AmountViewController.groupingSeparator}).count < 2 else {
+        guard string.filter({$0 == MicroTari.decimalSeparator.first}).count < 2 else {
             return false
         }
 
@@ -190,17 +212,21 @@ class AmountViewController: UIViewController {
         }
 
         var str = string
-        if !finalNumber && string.last == AmountViewController.groupingSeparator {
+        if !finalNumber && string.last == MicroTari.decimalSeparator.first {
             str = String(str.dropLast())
+        }
+
+        if str == "0" && finalNumber {
+            return false
         }
 
         return MicroTari.convertToNumber(str) != nil
     }
 
-    func convertRawToFormattedString() -> String? {
+    private func convertRawToFormattedString() -> String? {
         var decimalRemovedIfAtEndRawInput = rawInput
         var decimalRemoved = false
-        if rawInput.last == AmountViewController.groupingSeparator {
+        if rawInput.last == MicroTari.decimalSeparator.first {
             decimalRemovedIfAtEndRawInput = String(rawInput.dropLast())
             decimalRemoved = true
         }
@@ -209,28 +235,28 @@ class AmountViewController: UIViewController {
             return nil
         }
 
-        guard let formattedNumberString = MicroTari.convertToString(number, decimal: numberOfDecimals(in: decimalRemovedIfAtEndRawInput)) else {
+        guard let formattedNumberString = MicroTari.convertToString(number, fractionDigits: numberOfDecimals(in: decimalRemovedIfAtEndRawInput)) else {
             return nil
         }
 
         return formattedNumberString + (decimalRemoved ? MicroTari.decimalSeparator : "")
     }
 
-    func numberOfDecimals(in string: String) -> Int {
-        if let groupIndex = string.indexDistance(of: AmountViewController.groupingSeparator) {
+    private func numberOfDecimals(in string: String) -> Int {
+        if let groupIndex = string.indexDistance(of: MicroTari.decimalSeparator) {
             return max(string.count - groupIndex - 1, 0)
         }
 
         return 0
     }
 
-    @objc func feeButtonPressed(_ sender: UIButton) {
+    @objc private func feeButtonPressed(_ sender: UIButton) {
         UserFeedback.shared.info(
             title: NSLocalizedString("Transaction Fee", comment: "Transaction detail view"),
             description: NSLocalizedString("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas consequat risus sit amet laoreet mollis. ", comment: "Transaction detail view"))
     }
 
-    func showBalanceExceeded(balance: String) {
+    private func showBalanceExceeded(balance: String) {
         warningBalanceLabel.text = balance
         warningView.transform = CGAffineTransform(scaleX: 0.0, y: 0.0)
         UIView.animate(withDuration: animationDuration, animations: { [weak self] in
@@ -239,20 +265,20 @@ class AmountViewController: UIViewController {
             self.warningView.isHidden = false
         }, completion: nil)
 
-        valueImageView.transform = CGAffineTransform(translationX: 20, y: 0)
-        amountLabel.transform = CGAffineTransform(translationX: 20, y: 0)
-        UIView.animate(withDuration: animationDuration, delay: 0, usingSpringWithDamping: 0.2, initialSpringVelocity: 1, options: .curveEaseInOut, animations: { [weak self] in
-            guard let self = self else {return}
-            self.valueImageView.transform = CGAffineTransform.identity
-            self.amountLabel.transform = CGAffineTransform.identity
-        }, completion: nil)
+        let animation = CABasicAnimation(keyPath: "position")
+        animation.duration = animationDuration / 4
+        animation.repeatCount = 2
+        animation.autoreverses = true
+        animation.fromValue = CGPoint(x: amountLabel.center.x - 10, y: amountLabel.center.y)
+        animation.toValue = CGPoint(x: amountLabel.center.x + 10, y: amountLabel.center.y)
+        amountLabel.layer.add(animation, forKey: "position")
     }
 
-    func hideBalanceExceeded() {
+    private func hideBalanceExceeded() {
         warningView.isHidden = true
     }
 
-    func showTransactionAmount(_ amount: String) {
+    private func showTransactionFee(_ amount: String) {
         transactionViewContainer.alpha = 0.0
         transactionFeeLabel.text = amount
         let moveAnimation: CATransition = CATransition()
@@ -268,30 +294,33 @@ class AmountViewController: UIViewController {
         }
     }
 
-    func hideTransactionAmount() {
+    private func hideTransactionFee() {
         transactionViewContainer.alpha = 0.0
+    }
+
+    @objc private func continueButtonTapped() {
+
     }
 }
 
 extension AmountViewController {
-    func setup() {
+    private func setup() {
         //contiue button
-        view.addSubview(actionButton)
-        actionButton.translatesAutoresizingMaskIntoConstraints = false
-        actionButton.leftAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leftAnchor, constant: 25).isActive = true
-        actionButton.rightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.rightAnchor, constant: -25).isActive = true
-        actionButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10).isActive = true
-        actionButton.setTitle(NSLocalizedString("Continue", comment: "Continue button on the amount screen"), for: .normal)
-        actionButton.isEnabled = false
+        view.addSubview(continueButton)
+        continueButton.translatesAutoresizingMaskIntoConstraints = false
+        continueButton.leftAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leftAnchor, constant: 25).isActive = true
+        continueButton.rightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.rightAnchor, constant: -25).isActive = true
+        continueButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10).isActive = true
+        continueButton.setTitle(NSLocalizedString("Continue", comment: "Continue button on the amount screen"), for: .normal)
+        continueButton.addTarget(self, action: #selector(continueButtonTapped), for: .touchUpInside)
+        continueButton.isEnabled = false
         setupKeypad()
 
         //amount label
         view.addSubview(amountLabel)
-        amountLabel.animation = .update
+        amountLabel.animation = .type
         amountLabel.textAlignment = .center
         amountLabel.translatesAutoresizingMaskIntoConstraints = false
-        amountLabel.rightAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.rightAnchor, constant: -8).isActive = true
-        amountLabel.setContentHuggingPriority(.required, for: .horizontal)
         let amountTopLayoutGuide = UILayoutGuide()
         view.addLayoutGuide(amountTopLayoutGuide)
         amountTopLayoutGuide.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
@@ -301,19 +330,11 @@ extension AmountViewController {
         amountBottomLayoutGuide.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
         amountBottomLayoutGuide.bottomAnchor.constraint(equalTo: keypadContainerStackView.topAnchor).isActive = true
         amountBottomLayoutGuide.heightAnchor.constraint(equalTo: amountTopLayoutGuide.heightAnchor).isActive = true
+        amountLabel.rightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.rightAnchor, constant: -8).isActive = true
         amountLabel.topAnchor.constraint(equalTo: amountTopLayoutGuide.bottomAnchor).isActive = true
         amountLabel.bottomAnchor.constraint(equalTo: amountBottomLayoutGuide.topAnchor).isActive = true
-        amountLabel.heightAnchor.constraint(equalToConstant: 109).isActive = true
-        let amountCenterXConstraint = amountLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
-        amountCenterXConstraint.priority = .defaultLow
-        amountCenterXConstraint.isActive = true
-
-        valueImageView.translatesAutoresizingMaskIntoConstraints = false
-        valueImageView.widthAnchor.constraint(equalToConstant: 21).isActive = true
-        view.addSubview(valueImageView)
-        valueImageView.centerYAnchor.constraint(equalTo: amountLabel.centerYAnchor).isActive = true
-        valueImageView.leftAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leftAnchor, constant: 8).isActive = true
-        valueImageView.rightAnchor.constraint(equalTo: amountLabel.leftAnchor, constant: -16).isActive = true
+        amountLabel.heightAnchor.constraint(equalToConstant: 75).isActive = true
+        amountLabel.leftAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leftAnchor, constant: 8).isActive = true
 
         //warning view
         view.addSubview(warningView)
@@ -381,6 +402,7 @@ extension AmountViewController {
         transactionFeeLabel.textColor = Theme.shared.colors.transactionViewValueLabel
 
         let feeButton = TextButton()
+        feeButton.translatesAutoresizingMaskIntoConstraints = false
         feeButton.setTitle(NSLocalizedString("Transaction Fee", comment: "Transaction view screen"), for: .normal)
         feeButton.setRightImage(Theme.shared.images.transactionFee!)
         feeButton.addTarget(self, action: #selector(feeButtonPressed), for: .touchUpInside)
@@ -389,7 +411,7 @@ extension AmountViewController {
         transactionStackView.addArrangedSubview(feeButton)
     }
 
-    func setupKeypad() {
+    private func setupKeypad() {
         view.addSubview(keypadContainerStackView)
         keypadContainerStackView.translatesAutoresizingMaskIntoConstraints = false
         keypadContainerStackView.axis = .vertical
@@ -397,7 +419,7 @@ extension AmountViewController {
         keypadContainerStackView.backgroundColor = .clear
         keypadContainerStackView.translatesAutoresizingMaskIntoConstraints = false
         keypadContainerStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-        keypadContainerStackView.bottomAnchor.constraint(equalTo: actionButton.topAnchor, constant: -41).isActive = true
+        keypadContainerStackView.bottomAnchor.constraint(equalTo: continueButton.topAnchor, constant: -41).isActive = true
         keypadContainerStackView.leftAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leftAnchor).isActive = true
         keypadContainerStackView.rightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.rightAnchor).isActive = true
 
@@ -413,6 +435,7 @@ extension AmountViewController {
             button.addTarget(self, action: #selector(keypadButtonTapped(_:)), for: .touchUpInside)
             button.tag = i + 1
             button.setTitleColor(Theme.shared.colors.keypadButton, for: .normal)
+            button.tintColor = Theme.shared.colors.keypadButton
             button.titleLabel?.font = Theme.shared.fonts.keypadButton
             rows[i / (rows.count - 1)].addArrangedSubview(button)
             button.heightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.heightAnchor, multiplier: 0.1).isActive = true
@@ -420,11 +443,11 @@ extension AmountViewController {
             if i < 9 {
                 button.setTitle("\(i + 1)", for: .normal)
             } else if i == 9 {
-                button.setTitle(String(AmountViewController.groupingSeparator), for: .normal)
+                button.setTitle(String(MicroTari.decimalSeparator), for: .normal)
             } else if i == 10 {
                 button.setTitle("0", for: .normal)
             } else if i == 11 {
-                button.setTitle("x", for: .normal)
+                button.setImage(Theme.shared.images.delete, for: .normal)
             }
         }
     }

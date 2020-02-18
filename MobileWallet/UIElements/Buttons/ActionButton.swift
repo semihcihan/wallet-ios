@@ -41,7 +41,7 @@
 import UIKit
 
 class ActionButton: UIButton {
-    private let RADIUS_POINTS: CGFloat = 12.0
+    let RADIUS_POINTS: CGFloat = 12.0
     private let HEIGHT: CGFloat = 53.0
 
     override init(frame: CGRect) {

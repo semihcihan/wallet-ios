@@ -237,6 +237,7 @@ struct Images: Loopable {
 
     //Amount
     let gemAmount = UIImage(named: "GemAmount")
+    let delete = UIImage(named: "numpad-delete")
 }
 
 struct Theme {

@@ -43,7 +43,6 @@ import UIKit
 class SendButton: ActionButton {
     private let GRADIENT_LAYER_NAME = "GradientLayer"
     private var isCompiled = false
-    private let RADIUS_POINTS: CGFloat = 12.0
     private let GRADIENT_ANGLE: Double = 90.0
 
     override init(frame: CGRect) {

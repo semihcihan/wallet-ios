@@ -112,7 +112,8 @@ class AmountViewController: UIViewController {
             continueButton.isEnabled = true
         }
 
-        showTransactionFee("15.75")
+        //TODO: change the fee
+        showTransactionFee("+15.75")
     }
 
     @objc private func keypadButtonTapped(_ sender: UIButton) {
@@ -144,7 +145,6 @@ class AmountViewController: UIViewController {
         }
 
         rawInput = updatedInput
-        print(rawInput)
         updateLabelText()
     }
 
@@ -162,7 +162,6 @@ class AmountViewController: UIViewController {
         }
 
         rawInput = updatedText
-        print(rawInput)
         updateLabelText()
     }
 

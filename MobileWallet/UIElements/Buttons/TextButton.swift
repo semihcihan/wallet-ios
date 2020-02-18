@@ -46,6 +46,8 @@ enum TextButtonVariation {
 }
 
 class TextButton: UIButton {
+    private static let imageHorizontalSpaceing: CGFloat = 1
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         commonSetup()
@@ -116,6 +118,8 @@ class TextButton: UIButton {
         } else {
             setImage(image, for: .normal)
         }
+        imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: TextButton.imageHorizontalSpaceing)
+        titleEdgeInsets = UIEdgeInsets(top: 0, left: TextButton.imageHorizontalSpaceing, bottom: 0, right: 0)
 
         transform = CGAffineTransform(scaleX: -1.0, y: 1.0)
         titleLabel?.transform = CGAffineTransform(scaleX: -1.0, y: 1.0)
